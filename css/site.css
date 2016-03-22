@@ -1,0 +1,74 @@
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+body {
+    font-family: 'Gotham-Light', sans-serif;
+    font-weight: 350;
+    margin-bottom:20px;
+}
+
+.titledesc{
+    font-size:1.2em;
+    color: #555;
+}
+
+p {
+    font-size:1.4em;
+}
+
+.rightalign {
+    text-align:right;
+}
+
+.keyfiguredesc {
+    font-size:1.5em;
+}
+
+.keyfigure {
+    color: #B71C1C;
+    font-size:60px;
+}
+
+.data {
+    font-size:1em;
+    padding-bottom:10px;
+}
+
+.keyfigureunit {
+    font-size:0.5em;
+    color:#000;
+}
+
+.title {
+    margin-top:20px;
+    margin-bottom:20px;
+    background-color:#eee;
+}
+
+a {
+    color:#B71C1C;
+}
+
+a:hover {
+    color:#B71C1C;
+}
+
+h1 {
+    color:#B71C1C;
+}
+
+#image {
+    margin-top:20px;
+}
+
+.spark {
+    padding-left:10px;
+}
+
+.margintop30 {
+    margin-top:30px;
+}
