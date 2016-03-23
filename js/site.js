@@ -119,8 +119,8 @@ function update(cf,ynorm,selected,sort,pop){
     });
     if(pop){
         if(ynorm){
-            ynorm = d3.max(cf.epiWeekCountryPopGroup.all(),function(d){
-                return d['value'];
+            ynorm = d3.max(cf.epiWeekCountryGroup.all(),function(d){
+                return +d['value']/popData[d['key'].split('#')[1]].pop*100000;
             });
         }
     } else {        
@@ -189,7 +189,7 @@ $.when(dataCall,popCall).then(function(dataArgs,popArgs){
         cf.regionDim = cf.dimension(function(d){return d['#region']});
         cf.severityDim = cf.dimension(function(d){return d['#severity']});
         cf.epiWeekDim = cf.dimension(function(d){return d['#date+epiweek+outbreak']});
-        cf.epiWeekCountryDim = cf.dimension(function(d){return d['#date+epiweek+outbreak']+'#'+d['#country']});
+        cf.epiWeekCountryDim = cf.dimension(function(d){return d['#date+epiweek+outbreak']+'#'+d['#geo+iso3']});
         cf.epiWeekGroup = cf.epiWeekDim.group().reduceSum(function(d){return d['#affected']});
         cf.countryGroup = cf.countryDim.group().reduceSum(function(d){return d['#affected']});
         cf.epiWeekCountryGroup = cf.epiWeekCountryDim.group().reduceSum(function(d){return d['#affected']});
