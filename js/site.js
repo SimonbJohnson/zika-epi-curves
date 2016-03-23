@@ -170,7 +170,7 @@ var dataCall = $.ajax({
 
 var popCall = $.ajax({ 
     type: 'GET', 
-    url: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1kyxNHb1w_X1CapmuLWxX5g-65_2KaQmk5rxgSkCAtsw/edit%23gid%3D0&strip-headers=on&filter01=cut&cut-include-tags01=%23country%2C%23population&force=1', 
+    url: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1kyxNHb1w_X1CapmuLWxX5g-65_2KaQmk5rxgSkCAtsw/edit%23gid%3D0&strip-headers=on&filter01=cut&cut-include-tags01=%23country%2C%23population', 
     dataType: 'json',
 });
 
