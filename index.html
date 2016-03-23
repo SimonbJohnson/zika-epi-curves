@@ -49,12 +49,19 @@
                         <input class="cases" type="checkbox" name="cases" value="Confirmed" checked> Confirmed Cases 
                         <input class="cases" type="checkbox" name="cases" value="Suspected" checked> Suspected Cases 
                     </p>
+                    <p>
+                        <input id="abs" type="radio" name="abs" value="abs" checked> Absolute
+                        <input type="radio" name="abs" value="pop"> Per 100,000 people
+                    </p>                    
                 </div>
             </div>
             <div class="row title">
-                <div class="col-md-12">
+                <div class="col-md-2">
                     <h3>Epi Curves</h3>
                 </div>
+                <div class="col-md-10">
+                    <button id="sort" class="margintop20">Sort by Highest</button>
+                </div>                
             </div>            
             <div id="graphs" class="row">
             </div>

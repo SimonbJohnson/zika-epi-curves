@@ -26,14 +26,43 @@ function hxlProxyToJSON(input,headers){
     return output;
 }
 
-function graph(id,cf,dimension,filter,percap,xmin,xmax,ymax){
+function createHash(data){
+    var output = {}
+    data.forEach(function(d){
+        output[d['#country+code']] = {country:d['#country+name'],pop:d['#population']}
+    });
+    return output
+}
+
+function graph(id,cf,dimension,filter,percap,xmin,xmax,ymax,pop){
 
     cf.countryDim.filterAll();
     cf.regionDim.filterAll();
+    cf.epiWeekDim.filterAll();
 
     cf[dimension].filter(filter);
 
     var data  = cf.epiWeekGroup.all();
+    var population=popData[filter].pop;
+
+    if(pop){
+        var line = d3.svg.line()
+                .x(function(d,i) { return x(d['key']); })
+                .y(function(d) { return y(d['value']/population*100000); })
+                .interpolate("basis");
+        if(ymax==false){
+            ymax = d3.max(data, function(d) { return d['value']/population*100000; });
+        }                        
+    } else {
+        var line = d3.svg.line()
+                .x(function(d,i) { return x(d['key']); })
+                .y(function(d) { return y(d['value']); })
+                .interpolate("basis");
+
+        if(ymax==false){
+            ymax = d3.max(data, function(d) { return d['value']; });
+        }                        
+    }
 
     var margin = {top: 20, right: 20, bottom: 25, left: 55},
         width = $(id).width() - margin.left - margin.right,
@@ -42,15 +71,8 @@ function graph(id,cf,dimension,filter,percap,xmin,xmax,ymax){
 	var x = d3.scale.linear().range([0, width]);
 	var y = d3.scale.linear().range([height, 0]);
 
-	var line = d3.svg.line()
-            .x(function(d,i) { return x(d['key']); })
-            .y(function(d) { return y(d['value']); })
-            .interpolate("basis");
-
 	x.domain([xmin,xmax]);
-    if(ymax==false){
-        ymax = d3.max(data, function(d) { return d['value']; });
-    }
+
   	y.domain([0,ymax]);
 
     var xAxis = d3.svg.axis()
@@ -88,56 +110,101 @@ function graph(id,cf,dimension,filter,percap,xmin,xmax,ymax){
         .call(yAxis);        
 }
 
-function update(cf,ynorm,selected){
-    console.log(selected);
+function update(cf,ynorm,selected,sort,pop){
     cf.countryDim.filterAll();
     cf.regionDim.filterAll();
+    cf.epiWeekDim.filter(xmax);
     cf.severityDim.filter(function(d){
       return selected.indexOf(d) > -1;
-    });        
-   
+    });
+    if(pop){
+        if(ynorm){
+            ynorm = d3.max(cf.epiWeekCountryPopGroup.all(),function(d){
+                return d['value'];
+            });
+        }
+    } else {        
         if(ynorm){
             ynorm = d3.max(cf.epiWeekCountryGroup.all(),function(d){
                 return d['value'];
             });
         }
+    }
         $('#graphs').html('');
-        var countries = cf.countryGroup.all();
+        var countries = jQuery.extend([], cf.countryGroup.all());
+        if(sort){
+            countries.sort(function(a,b){
+                if(pop){
+                    return parseFloat(b.value/popData[b.key].pop) - parseFloat(a.value/popData[a.key].pop);
+                } else {
+                    return parseFloat(b.value) - parseFloat(a.value);
+                }
+            });
+        } else {
+            countries.sort(function(a,b){
+                return a.key.localeCompare(b.key);
+            }); 
+        }
+        var country ='';
         countries.forEach(function(c,i){
-                $('#graphs').append('<div id="graph'+i+'" class="col-md-4"><h4>'+c['key']+'</h4></div>');
-                graph('#graph'+i,cf,'countryDim',c['key'],false,xmin,xmax,ynorm);
+                country = popData[c['key']].country;
+                $('#graphs').append('<div id="graph'+i+'" class="col-md-4"><h4>'+country+'</h4></div>');
+                graph('#graph'+i,cf,'countryDim',c['key'],false,xmin,xmax,ynorm,pop);
         });
  
 }
+    
 
 var xmin;
 var xmax;
+var cf;
+var pop = false;
+var popData;
+var sort = false;
+
+var dataCall = $.ajax({ 
+    type: 'GET', 
+    url: 'https://proxy.hxlstandard.org/data.json?strip-headers=on&url=https%3A//docs.google.com/spreadsheets/d/1_S6PA5L32Mq7H_cfp9NAe-Y8-17hNer2OMyb3hVPTvU/pub%3Fgid%3D1516521608%26single%3Dtrue%26output%3Dcsv', 
+    dataType: 'json',
+});
+
+var popCall = $.ajax({ 
+    type: 'GET', 
+    url: 'https://proxy.hxlstandard.org/data.json?url=https%3A//docs.google.com/spreadsheets/d/1kyxNHb1w_X1CapmuLWxX5g-65_2KaQmk5rxgSkCAtsw/edit%23gid%3D0&strip-headers=on&filter01=cut&cut-include-tags01=%23country%2C%23population&force=1', 
+    dataType: 'json',
+});
+
+$.when(dataCall,popCall).then(function(dataArgs,popArgs){
+        data = hxlProxyToJSON(dataArgs[0]);
+        data.forEach(function(d){
+            d['#date+epiweek+outbreak'] = +d['#date+epiweek+outbreak']
+        });
+        popData = createHash(hxlProxyToJSON(popArgs[0]));
+
+        xmin = d3.min(data,function(d){return d['#date+epiweek+outbreak']});
+        xmax = d3.max(data,function(d){return d['#date+epiweek+outbreak']}); 
+
+        cf = crossfilter(data);
+        cf.countryDim = cf.dimension(function(d){return d['#geo+iso3']});
+        cf.regionDim = cf.dimension(function(d){return d['#region']});
+        cf.severityDim = cf.dimension(function(d){return d['#severity']});
+        cf.epiWeekDim = cf.dimension(function(d){return d['#date+epiweek+outbreak']});
+        cf.epiWeekCountryDim = cf.dimension(function(d){return d['#date+epiweek+outbreak']+'#'+d['#country']});
+        cf.epiWeekGroup = cf.epiWeekDim.group().reduceSum(function(d){return d['#affected']});
+        cf.countryGroup = cf.countryDim.group().reduceSum(function(d){return d['#affected']});
+        cf.epiWeekCountryGroup = cf.epiWeekCountryDim.group().reduceSum(function(d){return d['#affected']});
+        update(cf,false,['Confirmed','Suspected'],false,false);
+    });
 
 $.ajax({
 		type:'GET',
 		url: 'https://proxy.hxlstandard.org/data.json?strip-headers=on&url=https%3A//docs.google.com/spreadsheets/d/1_S6PA5L32Mq7H_cfp9NAe-Y8-17hNer2OMyb3hVPTvU/pub%3Fgid%3D1516521608%26single%3Dtrue%26output%3Dcsv', 
     	    dataType: 'json',		
       	    success: function(data) {
-        		data = hxlProxyToJSON(data);
-        		data.forEach(function(d){
-        			  d['#date+epiweek+outbreak'] = +d['#date+epiweek+outbreak']
-                });
-
-                xmin = d3.min(data,function(d){return d['#date+epiweek+outbreak']});
-                xmax = d3.max(data,function(d){return d['#date+epiweek+outbreak']}); 
-
-                cf = crossfilter(data);
-                cf.countryDim = cf.dimension(function(d){return d['#country']});
-                cf.regionDim = cf.dimension(function(d){return d['#region']});
-                cf.severityDim = cf.dimension(function(d){return d['#severity']});
-                cf.epiWeekDim = cf.dimension(function(d){return d['#date+epiweek+outbreak']});
-                cf.epiWeekCountryDim = cf.dimension(function(d){return d['#date+epiweek+outbreak']+'#'+d['#country']});
-                cf.epiWeekGroup = cf.epiWeekDim.group().reduceSum(function(d){return d['#affected']});
-                cf.countryGroup = cf.countryDim.group();
-                cf.epiWeekCountryGroup = cf.epiWeekCountryDim.group().reduceSum(function(d){return d['#affected']});
-                update(cf,false,['Confirmed','Suspected']);            
+        		            
       	    }
         });
+//
 
 function selectChange(){
     var selected = [];
@@ -145,10 +212,10 @@ function selectChange(){
             selected.push($(this).attr('value'));
         });
         if ($('#ind').is(':checked')) {
-            update(cf,false,selected); 
+            update(cf,false,selected,sort,pop); 
         }
         else {
-            update(cf,true,selected); 
+            update(cf,true,selected,sort,pop); 
         }
 }
 
@@ -159,3 +226,17 @@ $('.cases').change(function(){
     selectChange();
 })
 
+$('input[type=radio][name=abs]').change(function() {
+    pop =!pop;
+    selectChange();
+});
+
+$('#sort').on('click',function(){
+    if(sort){
+        $('#sort').html('Sort by highest');
+    } else {
+        $('#sort').html('Sort by A-Z');
+    }
+    sort = !sort;
+    selectChange();
+});
