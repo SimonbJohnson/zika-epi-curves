@@ -196,16 +196,6 @@ $.when(dataCall,popCall).then(function(dataArgs,popArgs){
         update(cf,false,['Confirmed','Suspected'],false,false);
     });
 
-$.ajax({
-		type:'GET',
-		url: 'https://proxy.hxlstandard.org/data.json?strip-headers=on&url=https%3A//docs.google.com/spreadsheets/d/1_S6PA5L32Mq7H_cfp9NAe-Y8-17hNer2OMyb3hVPTvU/pub%3Fgid%3D1516521608%26single%3Dtrue%26output%3Dcsv', 
-    	    dataType: 'json',		
-      	    success: function(data) {
-        		            
-      	    }
-        });
-//
-
 function selectChange(){
     var selected = [];
         $('.cases:checked').each(function() {
